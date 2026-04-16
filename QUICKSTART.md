@@ -1,6 +1,3 @@
-# Quick Start Guide - Holics Flutter App
-
-## 🚀 Get Started in 5 Minutes
 
 ### Step 1: Clone & Setup (1 min)
 ```bash
