@@ -142,7 +142,7 @@ Comprehensive management interface with:
 - `fcmServiceProvider` - FCM notifications service
 
 **Stream & Future Providers:**
-- `authStateChangesProvider` - Real-time auth state
+- `authStateChangesProvider` - Real-time authentication state
 - `currentUserIdProvider` - Logged-in user ID
 - `userProvider` - User document stream
 - `currentUserProvider` - Current logged-in user
