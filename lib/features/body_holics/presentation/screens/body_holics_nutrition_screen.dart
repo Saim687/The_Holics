@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:the_holics/core/theme/app_theme.dart';
 import 'package:the_holics/shared/providers/providers.dart';
 import 'package:the_holics/shared/providers/content_provider.dart';
@@ -9,6 +10,49 @@ import 'package:the_holics/shared/providers/subscription_provider.dart';
 
 class BodyHolicsNutritionScreen extends ConsumerWidget {
   const BodyHolicsNutritionScreen({super.key});
+
+  Future<void> _openWhatsApp(
+    BuildContext context,
+    String whatsappNumber,
+  ) async {
+    final normalizedNumber = whatsappNumber.replaceAll(RegExp(r'\D'), '');
+    final message = Uri.encodeComponent(
+      'Hi Dr Zunair Azam! I want my personalized nutrition plan from Body Holics.',
+    );
+
+    final whatsappUri = Uri.parse(
+      'whatsapp://send?phone=$normalizedNumber&text=$message',
+    );
+    final fallbackUri = Uri.parse(
+      'https://wa.me/$normalizedNumber?text=$message',
+    );
+
+    try {
+      final launched = await launchUrl(
+        whatsappUri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        final fallbackLaunched = await launchUrl(
+          fallbackUri,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (!fallbackLaunched && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open WhatsApp')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -106,17 +150,17 @@ class BodyHolicsNutritionScreen extends ConsumerWidget {
                   );
                 }
 
-                final nutritionAsync = ref.watch(nutritionPlansProvider);
-                return nutritionAsync.when(
-                  data: (items) {
-                    if (items.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'No nutrition plans available yet.',
-                          style: TextStyle(color: AppTheme.textSecondary),
-                        ),
-                      );
-                    }
+                final specialistsAsync = ref.watch(specialistsProvider);
+                return specialistsAsync.when(
+                  data: (specialists) {
+                    final drZunair = specialists.where((s) {
+                      final name = s.name.toLowerCase();
+                      final title = s.title.toLowerCase();
+                      return name.contains('zunair azam') ||
+                          title.contains('zunair azam');
+                    }).toList();
+                    final specialist = drZunair.isNotEmpty ? drZunair.first : null;
+                    final whatsappNumber = specialist?.whatsappNumber;
 
                     return ListView(
                       padding: const EdgeInsets.all(16),
@@ -125,7 +169,7 @@ class BodyHolicsNutritionScreen extends ConsumerWidget {
                           delayFactor: 0.06,
                           child: Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 begin: Alignment.topLeft,
@@ -141,16 +185,16 @@ class BodyHolicsNutritionScreen extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Nutrition Hub',
+                                  'Personal Nutrition Plan',
                                   style: TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.w700,
                                     color: AppTheme.textPrimary,
                                   ),
                                 ),
-                                Gap(4),
+                                Gap(6),
                                 Text(
-                                  'Meal plans and dietary guidance to support your fitness goals.',
+                                  'Body Holics nutrition is managed only by Dr Zunair Azam. Contact him directly on WhatsApp for your custom plan.',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: AppTheme.textSecondary,
@@ -160,63 +204,121 @@ class BodyHolicsNutritionScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        const Gap(12),
-                        ...items.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final n = entry.value;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            child: _StaggerReveal(
-                              delayFactor: (0.10 + (index * 0.05)).clamp(0.10, 0.80),
-                              child: Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [AppTheme.surfaceCard, Color(0xFF1A1A1A)],
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: AppTheme.borderColor),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        const Gap(14),
+                        _StaggerReveal(
+                          delayFactor: 0.12,
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [AppTheme.surfaceCard, Color(0xFF1A1A1A)],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppTheme.borderColor),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    Row(
-                                      children: const [
-                                        Icon(Icons.restaurant,
-                                            color: AppTheme.bodyHolicsOrange),
-                                        Gap(8),
-                                        Text(
-                                          'Nutrition Plan',
-                                          style: TextStyle(
-                                            color: AppTheme.textSecondary,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const Gap(8),
-                                    Text(
-                                      n.title,
-                                      style: const TextStyle(
-                                        color: AppTheme.textPrimary,
-                                        fontWeight: FontWeight.w600,
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.bodyHolicsOrange.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.medical_services,
+                                        color: AppTheme.bodyHolicsOrange,
                                       ),
                                     ),
-                                    const Gap(6),
-                                    Text(
-                                      n.description,
-                                      style: const TextStyle(
-                                        color: AppTheme.textSecondary,
+                                    const Gap(12),
+                                    const Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Dr Zunair Azam',
+                                            style: TextStyle(
+                                              color: AppTheme.textPrimary,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          Gap(2),
+                                          Text(
+                                            'Gym & Nutrition Specialist',
+                                            style: TextStyle(
+                                              color: AppTheme.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
+                                const Gap(14),
+                                const Text(
+                                  'Share your goal, current weight, schedule, and food preferences on WhatsApp to receive your personalized plan.',
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const Gap(16),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: (whatsappNumber == null ||
+                                            whatsappNumber.trim().isEmpty)
+                                        ? null
+                                        : () => _openWhatsApp(
+                                              context,
+                                              whatsappNumber,
+                                            ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF1FAE57),
+                                      foregroundColor: Colors.white,
+                                      minimumSize: const Size.fromHeight(52),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.chat),
+                                    label: const Text(
+                                      'Contact on WhatsApp',
+                                      style: TextStyle(fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                ),
+                                if (specialist == null) ...[
+                                  const Gap(10),
+                                  const Text(
+                                    'Dr Zunair profile not found in specialists collection.',
+                                    style: TextStyle(
+                                      color: AppTheme.errorRed,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ] else if (whatsappNumber == null ||
+                                    whatsappNumber.trim().isEmpty) ...[
+                                  const Gap(10),
+                                  const Text(
+                                    'Dr Zunair WhatsApp number is not configured in specialists collection.',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                          );
-                        }),
+                          ),
+                        ),
                       ],
                     );
                   },

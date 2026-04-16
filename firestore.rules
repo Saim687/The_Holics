@@ -53,6 +53,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Support contact (read by authenticated users, write by admins only)
+    match /admin_settings/support_details {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // Subscription requests (users create/read their own, admins manage all)
     match /subscription_requests/{uid} {
       allow create: if request.auth != null

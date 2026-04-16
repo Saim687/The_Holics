@@ -12,7 +12,7 @@ class Appointment {
   final String specialistId;
   final String? slotId;
   final double price;
-  final String status; // 'confirmed', 'completed', 'cancelled'
+  final String status; // 'pending', 'approved', 'confirmed', 'completed', 'cancelled'
   final String? paymentMethod; // e.g. 'manual'
   final String? paymentStatus; // e.g. 'proof_submitted'
   final String? paymentProofUrl;
@@ -50,7 +50,7 @@ class Appointment {
       specialistId: json['specialistId'] ?? '',
       slotId: json['slotId'],
       price: (json['price'] as num?)?.toDouble() ?? 0,
-      status: json['status'] ?? 'confirmed',
+      status: json['status'] ?? 'pending',
       paymentMethod: json['paymentMethod'],
       paymentStatus: json['paymentStatus'],
       paymentProofUrl: json['paymentProofUrl'],

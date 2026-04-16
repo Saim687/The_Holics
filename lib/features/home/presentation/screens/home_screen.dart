@@ -12,6 +12,7 @@ import 'package:the_holics/shared/providers/user_provider.dart';
 import 'package:the_holics/shared/providers/providers.dart';
 import 'package:the_holics/shared/providers/content_provider.dart';
 import 'package:gap/gap.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -27,11 +28,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await ref.read(authServiceProvider).signOut();
   }
 
+  Future<void> _openWhatsApp(String whatsappNumber, String specialistName) async {
+    final normalizedNumber = whatsappNumber.replaceAll(RegExp(r'\D'), '');
+    final message = Uri.encodeComponent(
+      'Hi $specialistName! I have an approved consultation appointment with you. Looking forward to our session!'
+    );
+    final whatsappUri = Uri.parse(
+      'whatsapp://send?phone=$normalizedNumber&text=$message',
+    );
+    final fallbackUri = Uri.parse(
+      'https://wa.me/$normalizedNumber?text=$message',
+    );
+
+    try {
+      final launched = await launchUrl(
+        whatsappUri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!launched) {
+        final fallbackLaunched = await launchUrl(
+          fallbackUri,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (!fallbackLaunched && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open WhatsApp')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final appointments = ref.watch(currentUserAppointmentsProvider);
     final specialists = ref.watch(specialistsProvider);
+    final firestoreService = ref.watch(firestoreServiceProvider);
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
 
@@ -363,6 +404,148 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ),
                                     ],
                                   ),
+                                  const Gap(10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: appointment.status.toLowerCase() == 'pending'
+                                          ? Colors.amber.withOpacity(0.2)
+                                          : appointment.status.toLowerCase() == 'cancelled'
+                                              ? Colors.red.withOpacity(0.2)
+                                          : Colors.green.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      appointment.status.toLowerCase() == 'pending'
+                                          ? 'Pending Approval'
+                                          : appointment.status.toLowerCase() == 'cancelled'
+                                              ? 'Cancelled'
+                                          : appointment.status.toLowerCase() == 'approved'
+                                              ? 'Approved'
+                                              : appointment.status.toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: appointment.status.toLowerCase() == 'pending'
+                                            ? Colors.amber.shade700
+                                            : appointment.status.toLowerCase() == 'cancelled'
+                                                ? Colors.red.shade700
+                                            : Colors.green.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                  if (appointment.status.toLowerCase() == 'cancelled') ...[
+                                    const Gap(10),
+                                    StreamBuilder<Map<String, dynamic>?> (
+                                      stream: ref
+                                          .watch(firestoreServiceProvider)
+                                          .supportContactStream(),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasError) {
+                                          return const Text(
+                                            'Unable to load support contact',
+                                            style: TextStyle(
+                                              color: AppTheme.errorRed,
+                                              fontSize: 12,
+                                            ),
+                                          );
+                                        }
+
+                                        final supportNumber = snapshot.data?['whatsappNumber']?.toString();
+                                        if (supportNumber == null || supportNumber.trim().isEmpty) {
+                                          return const Text(
+                                            'Support contact not configured',
+                                            style: TextStyle(
+                                              color: AppTheme.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                          );
+                                        }
+
+                                        return GestureDetector(
+                                          onTap: () => _openWhatsApp(
+                                            supportNumber,
+                                            'Support Team',
+                                          ),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red.withOpacity(0.15),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: Colors.red.withOpacity(0.5),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.support_agent,
+                                                  size: 16,
+                                                  color: Colors.red,
+                                                ),
+                                                const Gap(6),
+                                                const Text(
+                                                  'Contact Support on WhatsApp',
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ] else if ((appointment.status.toLowerCase() == 'approved' || appointment.status.toLowerCase() == 'confirmed') && specialist?.whatsappNumber != null) ...[
+                                    const Gap(10),
+                                    GestureDetector(
+                                      onTap: () => _openWhatsApp(
+                                        specialist!.whatsappNumber!,
+                                        specialistName,
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.green.withOpacity(0.5),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.chat,
+                                              size: 16,
+                                              color: Colors.green,
+                                            ),
+                                            const Gap(6),
+                                            const Text(
+                                              'Contact on WhatsApp',
+                                              style: TextStyle(
+                                                color: Colors.green,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             );

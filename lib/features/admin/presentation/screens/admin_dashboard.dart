@@ -656,7 +656,7 @@ class _DashboardOverviewState extends ConsumerState<_DashboardOverview> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: apt.status == 'confirmed'
+                                color: apt.status == 'approved' || apt.status == 'confirmed'
                                     ? AppTheme.successGreen.withOpacity(0.2)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(4),
@@ -664,7 +664,7 @@ class _DashboardOverviewState extends ConsumerState<_DashboardOverview> {
                               child: Text(
                                 apt.status,
                                 style: TextStyle(
-                                  color: apt.status == 'confirmed'
+                                  color: apt.status == 'approved' || apt.status == 'confirmed'
                                       ? AppTheme.successGreen
                                       : AppTheme.textSecondary,
                                   fontSize: 12,
@@ -697,7 +697,7 @@ class _DashboardOverviewState extends ConsumerState<_DashboardOverview> {
 
   bool _isRevenueEligibleAppointment(Appointment appointment) {
     final status = appointment.status.toLowerCase();
-    return status == 'confirmed' || status == 'completed';
+    return status == 'approved' || status == 'confirmed' || status == 'completed';
   }
 
   int _bodyPanelUsers(List<Subscription> subscriptions) {
@@ -2480,7 +2480,7 @@ class _AppointmentsTab extends ConsumerWidget {
                                                   apt.userId,
                                                   apt.id,
                                                   {
-                                                    'status': 'confirmed',
+                                                      'status': 'approved',
                                                   },
                                                 );
                                                 ref.invalidate(

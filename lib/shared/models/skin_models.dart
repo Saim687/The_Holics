@@ -44,6 +44,8 @@ class Specialist {
   final String specialty; // e.g., "Anti-Aging & Hydration"
   final bool isAvailable;
   final String? photoUrl;
+  final String? whatsappNumber; // e.g., "+923001234567"
+  final String? phone; // alternative contact
 
   Specialist({
     required this.id,
@@ -52,6 +54,8 @@ class Specialist {
     required this.specialty,
     required this.isAvailable,
     this.photoUrl,
+    this.whatsappNumber,
+    this.phone,
   });
 
   factory Specialist.fromJson(Map<String, dynamic> json, String docId) {
@@ -62,6 +66,8 @@ class Specialist {
       specialty: json['specialty'] ?? '',
       isAvailable: json['isAvailable'] ?? true,
       photoUrl: json['photoUrl'],
+      whatsappNumber: json['whatsappNumber'],
+      phone: json['phone'],
     );
   }
 
@@ -72,6 +78,8 @@ class Specialist {
       'specialty': specialty,
       'isAvailable': isAvailable,
       'photoUrl': photoUrl,
+      'whatsappNumber': whatsappNumber,
+      'phone': phone,
     };
   }
 }

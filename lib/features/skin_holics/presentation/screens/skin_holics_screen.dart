@@ -242,8 +242,7 @@ class _SkinHolicsScreenState extends ConsumerState<SkinHolicsScreen> {
 
         final paymentProofUrl =
           selectedPaymentMode == 'pay_now' ? _paymentProofUrl : null;
-        final appointmentStatus =
-          selectedPaymentMode == 'pay_now' ? 'pending' : 'confirmed';
+        final appointmentStatus = 'pending'; // All new bookings start as pending
 
       final appointment = Appointment(
         id: '',

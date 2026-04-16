@@ -632,6 +632,19 @@ class FirestoreService {
     });
   }
 
+  Stream<Map<String, dynamic>?> supportContactStream() {
+    return _firestore
+        .collection('admin_settings')
+        .doc('support_details')
+        .snapshots()
+        .map((doc) {
+      if (doc.exists) {
+        return doc.data();
+      }
+      return null;
+    });
+  }
+
   // === GOALS ===
   Future<void> createGoal(String uid, Map<String, dynamic> goal) async {
     try {

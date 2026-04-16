@@ -243,75 +243,84 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                         const Gap(10),
                         appointmentsAsync.when(
-                          data: (appointments) => appointments.isEmpty
-                              ? const EmptyStateWidget(
-                                  title: 'No Appointments',
-                                  subtitle: 'Book an appointment to get started',
-                                  icon: Icons.calendar_today,
-                                )
-                              : ListView.builder(
-                                  itemCount: appointments.length.clamp(0, 3),
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemBuilder: (context, index) {
-                                    final apt = appointments[index];
-                                    return Container(
-                                      margin: const EdgeInsets.only(bottom: 10),
-                                      padding: const EdgeInsets.all(14),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.surfaceCard,
-                                        borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: AppTheme.borderColor),
+                          data: (appointments) {
+                            final upcomingAppointments = appointments
+                                .where((apt) => apt.isUpcoming)
+                                .toList()
+                              ..sort((a, b) => a.date.compareTo(b.date));
+
+                            if (upcomingAppointments.isEmpty) {
+                              return const EmptyStateWidget(
+                                title: 'No Appointments',
+                                subtitle: 'Book an appointment to get started',
+                                icon: Icons.calendar_today,
+                              );
+                            }
+
+                            return ListView.builder(
+                              itemCount: upcomingAppointments.length.clamp(0, 3),
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemBuilder: (context, index) {
+                                final apt = upcomingAppointments[index];
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surfaceCard,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: AppTheme.borderColor),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 38,
+                                        height: 38,
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.bodyHolicsOrange.withOpacity(0.16),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Icon(
+                                          Icons.event_note,
+                                          size: 20,
+                                          color: AppTheme.bodyHolicsOrange,
+                                        ),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 38,
-                                            height: 38,
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.bodyHolicsOrange.withOpacity(0.16),
-                                              borderRadius: BorderRadius.circular(10),
+                                      const Gap(12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              apt.service,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppTheme.textPrimary,
+                                              ),
                                             ),
-                                            child: const Icon(
-                                              Icons.event_note,
-                                              size: 20,
-                                              color: AppTheme.bodyHolicsOrange,
+                                            const Gap(2),
+                                            Text(
+                                              '${apt.date.day}/${apt.date.month} at ${apt.time}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: AppTheme.textSecondary,
+                                              ),
                                             ),
-                                          ),
-                                          const Gap(12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  apt.service,
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: AppTheme.textPrimary,
-                                                  ),
-                                                ),
-                                                const Gap(2),
-                                                Text(
-                                                  '${apt.date.day}/${apt.date.month} at ${apt.time}',
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: AppTheme.textSecondary,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const Icon(
-                                            Icons.arrow_forward_ios_rounded,
-                                            size: 16,
-                                            color: AppTheme.textSecondary,
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    );
-                                  },
-                                ),
+                                      const Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 16,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
                           loading: () => ShimmerCardLoader(),
                           error: (error, stack) => Text('Error: $error'),
                         ),
