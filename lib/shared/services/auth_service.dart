@@ -2,10 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:the_holics/shared/services/session_service.dart';
 
 class AuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final SessionService _sessionService = SessionService();
 
   AuthService() {
     // Firebase Auth automatically persists session on mobile (Android/iOS)
@@ -100,6 +102,7 @@ class AuthService {
         await _googleSignIn.signOut();
       }
       await _firebaseAuth.signOut();
+      await _sessionService.clearSelectedPanel();
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
     }

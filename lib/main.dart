@@ -20,6 +20,7 @@ import 'package:the_holics/features/skin_holics/presentation/screens/skin_holics
 import 'package:the_holics/features/profile/presentation/screens/profile_screen.dart';
 import 'package:the_holics/features/admin/presentation/screens/admin_dashboard.dart';
 import 'package:the_holics/shared/providers/providers.dart';
+import 'package:the_holics/shared/services/session_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,6 +85,7 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     final authService = ref.read(authServiceProvider);
     final firestoreService = ref.read(firestoreServiceProvider);
+    final sessionService = SessionService();
 
     _goRouter = GoRouter(
       initialLocation: AppRoutes.splash,
@@ -91,11 +93,20 @@ class _MyAppState extends ConsumerState<MyApp> {
       redirect: (context, state) async {
         final user = authService.currentUser;
         final location = state.matchedLocation;
+        final selectedPanel = await sessionService.getSelectedPanel();
+        final googlePhonePending = await sessionService.isGooglePhonePending();
         final isPublicRoute =
             location == AppRoutes.splash ||
             location == AppRoutes.login ||
             location == AppRoutes.signup ||
             location == AppRoutes.passwordReset;
+
+        if (googlePhonePending) {
+          if (location == AppRoutes.login) {
+            return null;
+          }
+          return AppRoutes.login;
+        }
 
         if (user == null) {
           if (location == AppRoutes.splash) {
@@ -115,12 +126,17 @@ class _MyAppState extends ConsumerState<MyApp> {
           role = 'member';
         }
         final isAdmin = role == 'admin';
+        final effectivePanel = selectedPanel ?? (isAdmin ? SessionService.panelAdmin : SessionService.panelMember);
 
         if (isPublicRoute) {
-          return isAdmin ? AppRoutes.admin : AppRoutes.home;
+          if (effectivePanel == SessionService.panelAdmin && isAdmin) {
+            return AppRoutes.admin;
+          }
+          return AppRoutes.home;
         }
 
-        if (location.startsWith(AppRoutes.admin) && !isAdmin) {
+        if (location.startsWith(AppRoutes.admin) &&
+            (effectivePanel != SessionService.panelAdmin || !isAdmin)) {
           return AppRoutes.home;
         }
 

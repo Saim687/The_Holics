@@ -11,6 +11,7 @@ import 'package:the_holics/shared/models/skin_models.dart';
 import 'package:the_holics/shared/providers/user_provider.dart';
 import 'package:the_holics/shared/providers/providers.dart';
 import 'package:the_holics/shared/providers/content_provider.dart';
+import 'package:the_holics/shared/widgets/holics_bottom_nav.dart';
 import 'package:gap/gap.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -22,8 +23,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedIndex = 0;
-
   Future<void> _handleLogout() async {
     await ref.read(authServiceProvider).signOut();
   }
@@ -93,11 +92,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: const Text('Home'),
             ),
             TextButton(
-              onPressed: () => context.go(AppRoutes.bodyHolics),
+              onPressed: () => context.push(AppRoutes.bodyHolics),
               child: const Text('Body Holics'),
             ),
             TextButton(
-              onPressed: () => context.go(AppRoutes.skinHolics),
+              onPressed: () => context.push(AppRoutes.skinHolics),
               child: const Text('Skin Holics'),
             ),
           ],
@@ -106,7 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: PopupMenuButton<String>(
               onSelected: (value) async {
                 if (value == 'profile') {
-                  context.go(AppRoutes.profile);
+                  context.push(AppRoutes.profile);
                   return;
                 }
                 if (value == 'logout') {
@@ -140,44 +139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       body: _buildBody(user, appointments, specialists, isMobile),
-      bottomNavigationBar: isMobile
-          ? BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              selectedItemColor: AppTheme.bodyHolicsOrange,
-              unselectedItemColor: AppTheme.textSecondary,
-              backgroundColor: AppTheme.surfaceCard,
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home),
-                  label: 'Home',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.fitness_center),
-                  label: 'Body',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.spa),
-                  label: 'Skin',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person),
-                  label: 'Profile',
-                ),
-              ],
-              onTap: (index) {
-                setState(() => _selectedIndex = index);
-                if (index == 0) {
-                  context.go(AppRoutes.home);
-                } else if (index == 1) {
-                  context.go(AppRoutes.bodyHolics);
-                } else if (index == 2) {
-                  context.go(AppRoutes.skinHolics);
-                } else if (index == 3) {
-                  context.go(AppRoutes.profile);
-                }
-              },
-            )
-          : null,
+      bottomNavigationBar: const HolicsBottomNav(currentIndex: 0),
     );
   }
 
@@ -279,7 +241,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       subtitle: 'Gym subscriptions, workout plans & nutrition',
                       icon: Icons.fitness_center,
                       color: AppTheme.bodyHolicsOrange,
-                      onTap: () => context.go(AppRoutes.bodyHolics),
+                      onTap: () => context.push(AppRoutes.bodyHolics),
                     ),
                     const Gap(14),
                     _HeroCard(
@@ -287,7 +249,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       subtitle: 'Skincare appointments & beauty treatments',
                       icon: Icons.spa,
                       color: AppTheme.skinHolichPink,
-                      onTap: () => context.go(AppRoutes.skinHolics),
+                      onTap: () => context.push(AppRoutes.skinHolics),
                     ),
                     const Gap(26),
 

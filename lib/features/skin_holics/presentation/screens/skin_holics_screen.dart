@@ -5,6 +5,7 @@ import 'package:the_holics/core/router/app_routes.dart';
 import 'package:the_holics/core/theme/app_theme.dart';
 import 'package:the_holics/shared/widgets/holics_buttons.dart';
 import 'package:the_holics/shared/widgets/common_widgets.dart';
+import 'package:the_holics/shared/widgets/holics_bottom_nav.dart';
 import 'package:the_holics/shared/widgets/state_widgets.dart';
 import 'package:the_holics/shared/providers/content_provider.dart';
 import 'package:the_holics/shared/providers/providers.dart';
@@ -41,89 +42,112 @@ class _SkinHolicsScreenState extends ConsumerState<SkinHolicsScreen> {
     return const ['Service', 'Date & Time', 'Specialist', 'Payment', 'Confirm'];
   }
 
+  void _handleBackNavigation() {
+    if (_currentStep > 0) {
+      setState(() => _currentStep--);
+      return;
+    }
+
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.home);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.darkBg,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go(AppRoutes.home);
-            }
-          },
-        ),
-        title: const Text('Skin Holics'),
+    return WillPopScope(
+      onWillPop: () async {
+        if (_currentStep > 0) {
+          setState(() => _currentStep--);
+          return false;
+        }
+
+        if (context.canPop()) {
+          return true;
+        } else {
+          context.go(AppRoutes.home);
+          return false;
+        }
+      },
+      child: Scaffold(
         backgroundColor: AppTheme.darkBg,
-        elevation: 0,
-      ),
-      body: Stack(
-        children: [
-          Positioned(
-            top: -100,
-            right: -90,
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.skinHolichPink.withOpacity(0.12),
-              ),
-            ),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _handleBackNavigation,
           ),
-          Positioned(
-            bottom: -130,
-            left: -100,
-            child: Container(
-              width: 260,
-              height: 260,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.bodyHolicsOrange.withOpacity(0.08),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceCard.withOpacity(0.88),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.borderColor),
-                    ),
-                    child: _StepperIndicator(
-                      currentStep: _currentStep,
-                      steps: _steps,
-                    ),
-                  ),
+          title: const Text('Skin Holics'),
+          backgroundColor: AppTheme.darkBg,
+          elevation: 0,
+        ),
+        bottomNavigationBar: const HolicsBottomNav(currentIndex: 2),
+        body: Stack(
+          children: [
+            Positioned(
+              top: -100,
+              right: -90,
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.skinHolichPink.withOpacity(0.12),
                 ),
-                const Gap(8),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              ),
+            ),
+            Positioned(
+              bottom: -130,
+              left: -100,
+              child: Container(
+                width: 260,
+                height: 260,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.bodyHolicsOrange.withOpacity(0.08),
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceCard.withOpacity(0.72),
-                        borderRadius: BorderRadius.circular(18),
+                        color: AppTheme.surfaceCard.withOpacity(0.88),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: AppTheme.borderColor),
                       ),
-                      child: _buildStepContent(),
+                      child: _StepperIndicator(
+                        currentStep: _currentStep,
+                        steps: _steps,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const Gap(8),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceCard.withOpacity(0.72),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: AppTheme.borderColor),
+                        ),
+                        child: _buildStepContent(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

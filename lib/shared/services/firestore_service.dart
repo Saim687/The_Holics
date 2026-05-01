@@ -415,6 +415,22 @@ class FirestoreService {
         .map((doc) => doc.data());
   }
 
+  Stream<List<Appointment>> appointmentRequestsStream() {
+    return _firestore
+        .collectionGroup('appointments')
+        .snapshots()
+        .map((snapshot) {
+      final appointments = snapshot.docs
+          .map((doc) => Appointment.fromJson(doc.data(), doc.id))
+          .where((appointment) =>
+              appointment.status.trim().toLowerCase() == 'pending')
+          .toList();
+
+      appointments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return appointments;
+    });
+  }
+
   Future<void> updateSubscriptionRequestStatus(String docId, String newStatus) async {
     try {
       await _firestore.collection('subscription_requests').doc(docId).update({

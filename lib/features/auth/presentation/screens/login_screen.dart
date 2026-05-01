@@ -8,6 +8,7 @@ import 'package:the_holics/core/router/app_routes.dart';
 import 'package:the_holics/shared/widgets/holics_buttons.dart';
 import 'package:the_holics/shared/widgets/common_widgets.dart';
 import 'package:the_holics/shared/providers/providers.dart';
+import 'package:the_holics/shared/services/session_service.dart';
 import 'package:the_holics/shared/models/user_model.dart' as user_model;
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isAdmin = false;
+  final SessionService _sessionService = SessionService();
 
   @override
   void initState() {
@@ -111,11 +113,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         // Route to admin - now safe from GoRouter redirect interference
         if (mounted) {
+          await _sessionService.setSelectedPanel(SessionService.panelAdmin);
           context.go(AppRoutes.admin);
         }
       } else {
         // Member login path
         if (mounted) {
+          await _sessionService.setSelectedPanel(SessionService.panelMember);
           context.go(AppRoutes.home);
         }
       }
@@ -156,6 +160,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    await _sessionService.setGooglePhonePending(true);
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -189,22 +195,104 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         appUser = newUser;
       }
 
-      if (!mounted) return;
-      final role = appUser.role.toLowerCase();
-      if (role == 'admin') {
-        context.go(AppRoutes.admin);
-      } else {
-        context.go(AppRoutes.home);
+      final phoneNumber = await _ensurePhoneNumber(
+        existingPhoneNumber: appUser.phoneNumber,
+      );
+
+      if (phoneNumber == null) {
+        await authService.signOut();
+        await _sessionService.setGooglePhonePending(false);
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Phone number is required to continue with Google sign-in.';
+          });
+        }
+        return;
       }
+
+      if (phoneNumber != appUser.phoneNumber) {
+        await firestoreService.updateUser(firebaseUser.uid, {
+          'phoneNumber': phoneNumber,
+        });
+      }
+
+      if (!mounted) return;
+      await _sessionService.setSelectedPanel(SessionService.panelMember);
+      await _sessionService.setGooglePhonePending(false);
+      context.go(AppRoutes.home);
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
       });
     } finally {
+      await _sessionService.setGooglePhonePending(false);
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<String?> _ensurePhoneNumber({
+    required String? existingPhoneNumber,
+  }) async {
+    final currentPhone = existingPhoneNumber?.trim() ?? '';
+    if (currentPhone.isNotEmpty) {
+      return currentPhone;
+    }
+
+    if (!mounted) return null;
+
+    final phoneController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<String?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surfaceCard,
+          title: const Text('Add your phone number'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                hintText: '+92 300 1234567',
+              ),
+              validator: (value) {
+                final text = value?.trim() ?? '';
+                if (text.isEmpty) {
+                  return 'Phone number is required';
+                }
+                if (text.length < 8) {
+                  return 'Enter a valid phone number';
+                }
+                return null;
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(null),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  Navigator.of(dialogContext).pop(phoneController.text.trim());
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    phoneController.dispose();
+    return result?.trim();
   }
 
   @override

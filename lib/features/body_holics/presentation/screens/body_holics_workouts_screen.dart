@@ -7,6 +7,7 @@ import 'package:the_holics/core/theme/app_theme.dart';
 import 'package:the_holics/shared/providers/providers.dart';
 import 'package:the_holics/shared/providers/content_provider.dart';
 import 'package:the_holics/shared/providers/subscription_provider.dart';
+import 'package:the_holics/shared/widgets/holics_bottom_nav.dart';
 import 'package:the_holics/shared/widgets/exercise/exercise_player.dart';
 
 class BodyHolicsWorkoutsScreen extends ConsumerWidget {
@@ -32,6 +33,7 @@ class BodyHolicsWorkoutsScreen extends ConsumerWidget {
         backgroundColor: AppTheme.darkBg,
         elevation: 0,
       ),
+      bottomNavigationBar: const HolicsBottomNav(currentIndex: 1),
       body: Stack(
         children: [
           Positioned(

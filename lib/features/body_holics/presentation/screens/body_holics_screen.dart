@@ -8,6 +8,7 @@ import 'package:the_holics/shared/widgets/common_widgets.dart';
 import 'package:the_holics/shared/providers/providers.dart';
 import 'package:the_holics/shared/providers/user_provider.dart';
 import 'package:the_holics/shared/providers/subscription_provider.dart';
+import 'package:the_holics/shared/widgets/holics_bottom_nav.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:gap/gap.dart';
@@ -52,6 +53,7 @@ class _BodyHolicsScreenState extends ConsumerState<BodyHolicsScreen> {
         backgroundColor: AppTheme.darkBg,
         elevation: 0,
       ),
+      bottomNavigationBar: const HolicsBottomNav(currentIndex: 1),
       body: Stack(
         children: [
           Positioned(
@@ -1147,179 +1149,188 @@ class _SubscriptionModalState extends ConsumerState<SubscriptionModal> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    return Dialog(
-      backgroundColor: AppTheme.surfaceCard,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 24,
-      ),
-      child: Container(
-        width: size.width > 600 ? 600 : null,
-        constraints: BoxConstraints(
-          maxHeight: size.height * 0.85,
+    return WillPopScope(
+      onWillPop: () async {
+        if (_currentStep > 0) {
+          setState(() => _currentStep--);
+          return false;
+        }
+        return true;
+      },
+      child: Dialog(
+        backgroundColor: AppTheme.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 24,
         ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Spacer(),
-                Text(
-                  'Step ${_currentStep + 1} of 2',
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-            const Gap(8),
-
-            // Progress indicator
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: (_currentStep + 1) / 2,
-                backgroundColor: AppTheme.borderColor,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppTheme.bodyHolicsOrange,
-                ),
-                minHeight: 4,
-              ),
-            ),
-            const Gap(20),
-
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppTheme.darkBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.borderColor),
-              ),
-              child: Column(
+        child: Container(
+          width: size.width > 600 ? 600 : null,
+          constraints: BoxConstraints(
+            maxHeight: size.height * 0.85,
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
                 children: [
-                  _buildDetailRow(
-                    'Plan amount',
-                    'PKR ${widget.planPrice.toStringAsFixed(0)}',
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                  const Gap(8),
-                  _buildDetailRow(
-                    'Registration fee',
-                    widget.requiresRegistrationFee
-                        ? 'PKR ${widget.registrationFee.toStringAsFixed(0)}'
-                        : 'Already paid',
-                  ),
-                  const Gap(8),
-                  _buildDetailRow(
-                    'Total due',
-                    'PKR ${_amountDue.toStringAsFixed(0)}',
+                  const Spacer(),
+                  Text(
+                    'Step ${_currentStep + 1} of 2',
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
-            ),
+              const Gap(8),
 
-            const Gap(16),
-
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                child: _currentStep == 0
-                    ? _buildStep1PersonalInfo()
-                    : _buildStep2BankDetails(),
+              // Progress indicator
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: (_currentStep + 1) / 2,
+                  backgroundColor: AppTheme.borderColor,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppTheme.bodyHolicsOrange,
+                  ),
+                  minHeight: 4,
+                ),
               ),
-            ),
+              const Gap(20),
 
-            const Gap(20),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.darkBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.borderColor),
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow(
+                      'Plan amount',
+                      'PKR ${widget.planPrice.toStringAsFixed(0)}',
+                    ),
+                    const Gap(8),
+                    _buildDetailRow(
+                      'Registration fee',
+                      widget.requiresRegistrationFee
+                          ? 'PKR ${widget.registrationFee.toStringAsFixed(0)}'
+                          : 'Already paid',
+                    ),
+                    const Gap(8),
+                    _buildDetailRow(
+                      'Total due',
+                      'PKR ${_amountDue.toStringAsFixed(0)}',
+                    ),
+                  ],
+                ),
+              ),
 
-            // Buttons
-            Row(
-              children: [
-                if (_currentStep > 0)
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => setState(() => _currentStep--),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        side: const BorderSide(
-                          color: AppTheme.bodyHolicsOrange,
+              const Gap(16),
+
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  child: _currentStep == 0
+                      ? _buildStep1PersonalInfo()
+                      : _buildStep2BankDetails(),
+                ),
+              ),
+
+              const Gap(20),
+
+              // Buttons
+              Row(
+                children: [
+                  if (_currentStep > 0)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setState(() => _currentStep--),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: const BorderSide(
+                            color: AppTheme.bodyHolicsOrange,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
+                        child: const Text(
+                          'Back',
+                          style: TextStyle(color: AppTheme.bodyHolicsOrange),
+                        ),
+                      ),
+                    ),
+                  if (_currentStep > 0) const Gap(12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : () async {
+                              if (_currentStep == 0) {
+                                if (_isStep1Valid()) {
+                                  setState(() => _currentStep++);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Please fill all personal information'),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                if (_isStep2Valid()) {
+                                  await _submitSubscription();
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Please attach payment proof before submitting'),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.bodyHolicsOrange,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Back',
-                        style: TextStyle(color: AppTheme.bodyHolicsOrange),
-                      ),
-                    ),
-                  ),
-                if (_currentStep > 0) const Gap(12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isSubmitting
-                        ? null
-                        : () async {
-                            if (_currentStep == 0) {
-                              if (_isStep1Valid()) {
-                                setState(() => _currentStep++);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        'Please fill all personal information'),
-                                  ),
-                                );
-                              }
-                            } else {
-                              if (_isStep2Valid()) {
-                                await _submitSubscription();
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        'Please attach payment proof before submitting'),
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.bodyHolicsOrange,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              _currentStep == 0 ? 'Next' : 'Submit Request',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          )
-                        : Text(
-                            _currentStep == 0 ? 'Next' : 'Submit Request',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

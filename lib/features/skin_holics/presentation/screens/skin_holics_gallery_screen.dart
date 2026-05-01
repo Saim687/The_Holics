@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:the_holics/core/router/app_routes.dart';
 import 'package:the_holics/core/theme/app_theme.dart';
 import 'package:the_holics/shared/widgets/common_widgets.dart';
+import 'package:the_holics/shared/widgets/holics_bottom_nav.dart';
 
 class SkinHolicsGalleryScreen extends StatelessWidget {
   const SkinHolicsGalleryScreen({super.key});
@@ -52,10 +53,10 @@ class SkinHolicsGalleryScreen extends StatelessWidget {
             'A full-scope skin improvement program focused on tone correction, texture smoothing, and overall complexion balance.',
       ),
       const _ResultItem(
-        title: 'Shin Filler',
+        title: 'Skin Filler',
         duration: '6 weeks program',
         accent: Color(0xFFFF8CCF),
-        assetPath: 'assets/images/skin_holics/gallery/Shin_filler.jpeg',
+        assetPath: 'assets/images/skin_holics/gallery/Skin_filler.jpeg',
         details:
             'A specialized filler-based cosmetic treatment designed to refine contour balance and restore a more even appearance.',
       ),
@@ -86,6 +87,7 @@ class SkinHolicsGalleryScreen extends StatelessWidget {
         ),
         title: const Text('Our Results Gallery'),
       ),
+      bottomNavigationBar: const HolicsBottomNav(currentIndex: 2),
       body: Stack(
         children: [
           Positioned(

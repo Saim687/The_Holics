@@ -8,6 +8,7 @@ import 'package:the_holics/core/router/app_routes.dart';
 import 'package:the_holics/shared/widgets/holics_buttons.dart';
 import 'package:the_holics/shared/widgets/common_widgets.dart';
 import 'package:the_holics/shared/providers/providers.dart';
+import 'package:the_holics/shared/services/session_service.dart';
 import 'package:the_holics/shared/models/user_model.dart' as user_model;
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -25,6 +26,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   late TextEditingController _confirmPasswordController;
   bool _isLoading = false;
   String? _errorMessage;
+  final SessionService _sessionService = SessionService();
 
   @override
   void initState() {
@@ -97,6 +99,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         bodyHolicsRegistrationFeePaid: false,
       );
       await firestoreService.createUser(userCredential.user!.uid, newUser);
+      await _sessionService.setSelectedPanel(SessionService.panelMember);
 
       if (mounted) {
         context.go(AppRoutes.home);

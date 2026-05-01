@@ -5,6 +5,7 @@ import 'package:the_holics/core/theme/app_theme.dart';
 import 'package:the_holics/core/router/app_routes.dart';
 import 'package:the_holics/shared/widgets/common_widgets.dart';
 import 'package:the_holics/shared/widgets/holics_buttons.dart';
+import 'package:the_holics/shared/widgets/holics_bottom_nav.dart';
 import 'package:the_holics/shared/widgets/state_widgets.dart';
 import 'package:the_holics/shared/providers/user_provider.dart';
 import 'package:the_holics/shared/providers/subscription_provider.dart';
@@ -47,6 +48,7 @@ class ProfileScreen extends ConsumerWidget {
         backgroundColor: AppTheme.darkBg,
         elevation: 0,
       ),
+      bottomNavigationBar: const HolicsBottomNav(currentIndex: 3),
       body: userAsync.when(
         data: (user) => user == null
             ? const Center(child: Text('Not logged in'))

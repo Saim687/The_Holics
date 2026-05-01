@@ -2303,14 +2303,12 @@ class _AppointmentsTab extends ConsumerWidget {
           const Gap(16),
           aptsAsync.when(
             data: (apts) {
-              final upcomingAppointments = apts.where((apt) => apt.isUpcoming).toList();
+              final upcomingAppointments = apts.where((apt) => apt.isUpcoming && apt.status.trim().toLowerCase() == 'approved').toList();
 
               return usersAsync.when(
               data: (users) => specialistsAsync.when(
                 data: (specialists) {
-                  final pastAppointments = apts.where((apt) => apt.isPast).toList();
                   upcomingAppointments.sort((a, b) => a.date.compareTo(b.date));
-                  pastAppointments.sort((a, b) => b.date.compareTo(a.date));
 
                   final userById = {
                     for (final user in users) user.id: user,
@@ -2336,6 +2334,287 @@ class _AppointmentsTab extends ConsumerWidget {
                     return specialist.name;
                   }
 
+                  String formatDate(DateTime date) {
+                    return '${date.day}/${date.month}/${date.year}';
+                  }
+
+                  Widget buildPaymentProofWidget(String? paymentProof) {
+                    if (paymentProof == null || paymentProof.isEmpty) {
+                      return const Text(
+                        'No payment proof uploaded',
+                        style: TextStyle(color: AppTheme.textSecondary),
+                      );
+                    }
+
+                    if (paymentProof.startsWith('http://') ||
+                        paymentProof.startsWith('https://')) {
+                      return GestureDetector(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => Dialog(
+                              backgroundColor: Colors.black,
+                              insetPadding: const EdgeInsets.all(16),
+                              child: Stack(
+                                children: [
+                                  InteractiveViewer(
+                                    minScale: 0.5,
+                                    maxScale: 4,
+                                    child: Center(
+                                      child: Image.network(
+                                        paymentProof,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, __, ___) => const Padding(
+                                          padding: EdgeInsets.all(20),
+                                          child: Text(
+                                            'Unable to load proof image',
+                                            style: TextStyle(
+                                              color: AppTheme.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: IconButton(
+                                      icon: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                      ),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            color: Colors.black,
+                            width: double.infinity,
+                            height: 220,
+                            child: Image.network(
+                              paymentProof,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Text(
+                                  'Unable to load proof image',
+                                  style: TextStyle(color: AppTheme.textSecondary),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Text(
+                      paymentProof,
+                      style: const TextStyle(color: AppTheme.textSecondary),
+                    );
+                  }
+
+                  Widget buildAppointmentRequestCard(Appointment apt) {
+                    final paymentProof = apt.paymentProofUrl?.trim();
+                    final requestDate = formatDate(apt.createdAt);
+                    final status = apt.status.trim().toLowerCase();
+
+                    return HolicsCard(
+                      child: ExpansionTile(
+                        title: Text(
+                          resolveUserName(apt),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Service: ${apt.service} | Status: ${apt.status}',
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Appointment Details',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                                const Gap(8),
+                                _InfoRow('Service', apt.service),
+                                _InfoRow('Specialist', resolveSpecialistName(apt)),
+                                _InfoRow('Date', formatDate(apt.date)),
+                                _InfoRow('Time', apt.time),
+                                _InfoRow('Duration', '${apt.durationMin} min'),
+                                _InfoRow('Price', 'PKR ${apt.price.toStringAsFixed(0)}'),
+                                const Gap(16),
+                                const Text(
+                                  'Payment Details',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                                const Gap(8),
+                                _InfoRow(
+                                  'Payment Method',
+                                  apt.paymentMethod == 'manual'
+                                      ? 'Pay Now (Manual)'
+                                      : apt.paymentMethod == 'pay_physical'
+                                          ? 'Pay Physical'
+                                          : '-',
+                                ),
+                                _InfoRow(
+                                  'Payment Status',
+                                  apt.paymentStatus ?? '-',
+                                ),
+                                const Gap(8),
+                                buildPaymentProofWidget(paymentProof),
+                                if (paymentProof != null && paymentProof.isNotEmpty &&
+                                    (paymentProof.startsWith('http://') ||
+                                        paymentProof.startsWith('https://')))
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      'Tap image to view full size',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                const Gap(16),
+                                const Text(
+                                  'Request Info',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                                const Gap(8),
+                                _InfoRow('Request Date', requestDate),
+                                _InfoRow(
+                                  'Current Status',
+                                  apt.status.toUpperCase(),
+                                  statusColor: status == 'approved'
+                                      ? Colors.green
+                                      : status == 'cancelled'
+                                          ? Colors.red
+                                          : AppTheme.bodyHolicsOrange,
+                                ),
+                                const Gap(16),
+                                if (status == 'pending')
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: () async {
+                                            try {
+                                              await firestoreService
+                                                  .updateAppointment(
+                                                apt.userId,
+                                                apt.id,
+                                                {
+                                                  'status': 'approved',
+                                                },
+                                              );
+                                              ref.invalidate(
+                                                allAppointmentsProvider,
+                                              );
+                                              if (!context.mounted) return;
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Appointment approved',
+                                                  ),
+                                                ),
+                                              );
+                                            } catch (e) {
+                                              if (!context.mounted) return;
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Failed to approve: $e',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          icon: const Icon(Icons.check),
+                                          label: const Text('Approve'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        ),
+                                      ),
+                                      const Gap(8),
+                                      Expanded(
+                                        child: ElevatedButton.icon(
+                                          onPressed: () async {
+                                            try {
+                                              await firestoreService
+                                                  .updateAppointment(
+                                                apt.userId,
+                                                apt.id,
+                                                {
+                                                  'status': 'cancelled',
+                                                },
+                                              );
+                                              ref.invalidate(
+                                                allAppointmentsProvider,
+                                              );
+                                              if (!context.mounted) return;
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Appointment rejected',
+                                                  ),
+                                                ),
+                                              );
+                                            } catch (e) {
+                                              if (!context.mounted) return;
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    'Failed to reject: $e',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          icon: const Icon(Icons.close),
+                                          label: const Text('Reject'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
                   Widget buildAppointmentsTable(List<Appointment> items) {
                     if (items.isEmpty) {
                       return const EmptyStateWidget(
@@ -2354,208 +2633,22 @@ class _AppointmentsTab extends ConsumerWidget {
                             DataColumn(label: Text('Service')),
                             DataColumn(label: Text('Date & Time')),
                             DataColumn(label: Text('Specialist')),
-                            DataColumn(label: Text('Payment')),
-                            DataColumn(label: Text('Proof')),
-                            DataColumn(label: Text('Status')),
-                            DataColumn(label: Text('Price')),
-                            DataColumn(label: Text('Actions')),
+                            DataColumn(label: Text('Phone')),
                           ],
                           rows: items.map((apt) {
-                            final rowColor = apt.isPast
-                              ? Colors.white.withOpacity(0.03)
-                              : (apt.status == 'cancelled'
-                                ? AppTheme.errorRed.withOpacity(0.12)
-                                : AppTheme.successGreen.withOpacity(0.10));
+                            final user = userById[apt.userId];
+                            final phone = user?.phoneNumber ?? '-';
 
                             return DataRow(
-                              color: MaterialStatePropertyAll<Color?>(rowColor),
                               cells: [
-                              DataCell(Text(resolveUserName(apt))),
-                              DataCell(Text(apt.service)),
-                              DataCell(Text(
-                                  '${apt.date.day}/${apt.date.month}/${apt.date.year} ${apt.time}')),
-                              DataCell(Text(resolveSpecialistName(apt))),
-                              DataCell(
-                                Text(
-                                  apt.paymentMethod == 'manual'
-                                      ? 'Pay Now (Manual)'
-                                      : apt.paymentMethod == 'pay_physical'
-                                          ? 'Pay Physical'
-                                          : '-',
-                                ),
-                              ),
-                              DataCell(
-                                (apt.paymentMethod == 'manual' &&
-                                        apt.paymentProofUrl != null &&
-                                        apt.paymentProofUrl!.isNotEmpty)
-                                    ? TextButton(
-                                        onPressed: () {
-                                          final paymentProof =
-                                              apt.paymentProofUrl!.trim();
-
-                                          showDialog(
-                                            context: context,
-                                            builder: (_) => Dialog(
-                                              backgroundColor: Colors.black,
-                                              insetPadding:
-                                                  const EdgeInsets.all(16),
-                                              child: Stack(
-                                                children: [
-                                                  InteractiveViewer(
-                                                    minScale: 0.5,
-                                                    maxScale: 4,
-                                                    child: Center(
-                                                      child: paymentProof
-                                                                  .startsWith(
-                                                                      'http://') ||
-                                                              paymentProof
-                                                                  .startsWith(
-                                                                      'https://')
-                                                          ? Image.network(
-                                                              paymentProof,
-                                                              fit: BoxFit
-                                                                  .contain,
-                                                              errorBuilder: (_, __,
-                                                                      ___) =>
-                                                                  const Padding(
-                                                                padding:
-                                                                    EdgeInsets
-                                                                        .all(
-                                                                            20),
-                                                                child: Text(
-                                                                  'Unable to load proof image',
-                                                                  style: TextStyle(
-                                                                      color: AppTheme
-                                                                          .textSecondary),
-                                                                ),
-                                                              ),
-                                                            )
-                                                          : Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .all(20),
-                                                              child: Text(
-                                                                paymentProof,
-                                                                style: const TextStyle(
-                                                                    color: AppTheme
-                                                                        .textSecondary),
-                                                              ),
-                                                            ),
-                                                    ),
-                                                  ),
-                                                  Positioned(
-                                                    top: 8,
-                                                    right: 8,
-                                                    child: IconButton(
-                                                      icon: const Icon(
-                                                        Icons.close,
-                                                        color: Colors.white,
-                                                      ),
-                                                      onPressed: () =>
-                                                          Navigator.pop(
-                                                              context),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: const Text('View Proof'),
-                                      )
-                                    : const Text('-'),
-                              ),
-                              DataCell(Text(apt.status)),
-                              DataCell(Text('PKR ${apt.price.toStringAsFixed(0)}')),
-                              DataCell(
-                                apt.status == 'pending'
-                                    ? Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () async {
-                                              try {
-                                                await firestoreService
-                                                    .updateAppointment(
-                                                  apt.userId,
-                                                  apt.id,
-                                                  {
-                                                      'status': 'approved',
-                                                  },
-                                                );
-                                                ref.invalidate(
-                                                  allAppointmentsProvider,
-                                                );
-                                                if (!context.mounted) return;
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Appointment approved',
-                                                    ),
-                                                  ),
-                                                );
-                                              } catch (e) {
-                                                if (!context.mounted) return;
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Failed to approve: $e',
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                            child: const Text('Approve'),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          TextButton(
-                                            onPressed: () async {
-                                              try {
-                                                await firestoreService
-                                                    .updateAppointment(
-                                                  apt.userId,
-                                                  apt.id,
-                                                  {
-                                                    'status': 'cancelled',
-                                                  },
-                                                );
-                                                ref.invalidate(
-                                                  allAppointmentsProvider,
-                                                );
-                                                if (!context.mounted) return;
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Appointment rejected',
-                                                    ),
-                                                  ),
-                                                );
-                                              } catch (e) {
-                                                if (!context.mounted) return;
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      'Failed to reject: $e',
-                                                    ),
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                            style: TextButton.styleFrom(
-                                              foregroundColor:
-                                                  AppTheme.errorRed,
-                                            ),
-                                            child: const Text('Reject'),
-                                          ),
-                                        ],
-                                      )
-                                    : const Text('-'),
-                              ),
-                            ]);
+                                DataCell(Text(resolveUserName(apt))),
+                                DataCell(Text(apt.service)),
+                                DataCell(Text(
+                                    '${apt.date.day}/${apt.date.month}/${apt.date.year} ${apt.time}')),
+                                DataCell(Text(resolveSpecialistName(apt))),
+                                DataCell(Text(phone)),
+                              ],
+                            );
                           }).toList(),
                         ),
                       ),
@@ -2566,6 +2659,53 @@ class _AppointmentsTab extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
+                        'Appointment Requests',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const Gap(8),
+                      const Text(
+                        'Patients with pending appointment requests',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      const Gap(12),
+                      StreamBuilder<List<Appointment>>(
+                        stream: firestoreService.appointmentRequestsStream(),
+                        builder: (context, requestSnapshot) {
+                          if (requestSnapshot.connectionState == ConnectionState.waiting) {
+                            return const ShimmerCardLoader();
+                          }
+
+                          if (requestSnapshot.hasError) {
+                            return ErrorStateWidget(
+                              message: requestSnapshot.error.toString(),
+                              onRetry: () {},
+                            );
+                          }
+
+                          final requests = requestSnapshot.data ?? <Appointment>[];
+                          if (requests.isEmpty) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(24),
+                                child: Text('No pending appointment requests'),
+                              ),
+                            );
+                          }
+
+                          return Column(
+                            children: requests.map(buildAppointmentRequestCard).toList(),
+                          );
+                        },
+                      ),
+                      const Gap(20),
+                      const Text(
                         'Upcoming Appointments',
                         style: TextStyle(
                           fontSize: 16,
@@ -2575,17 +2715,6 @@ class _AppointmentsTab extends ConsumerWidget {
                       ),
                       const Gap(12),
                       buildAppointmentsTable(upcomingAppointments),
-                      const Gap(20),
-                      const Text(
-                        'Past Appointments',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      const Gap(12),
-                      buildAppointmentsTable(pastAppointments),
                     ],
                   );
                 },
@@ -2697,61 +2826,6 @@ class _ServicesTab extends ConsumerWidget {
                 ),
               ),
             ),
-            loading: () => ShimmerCardLoader(),
-            error: (error, stack) =>
-                ErrorStateWidget(message: error.toString(), onRetry: () {}),
-          ),
-          const Gap(24),
-          const Text('Current Skin Holics Bookings',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const Gap(16),
-          appointmentsAsync.when(
-            data: (appointments) {
-              final skinBookings = appointments
-                  .where((apt) => apt.service.trim().isNotEmpty)
-                  .toList()
-                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-              if (skinBookings.isEmpty) {
-                return const EmptyStateWidget(
-                  title: 'No bookings yet',
-                  subtitle: 'Bookings made in Skin Holics will appear here.',
-                  icon: Icons.calendar_today,
-                );
-              }
-
-              return HolicsCard(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: const [
-                      DataColumn(label: Text('User')),
-                      DataColumn(label: Text('Service')),
-                      DataColumn(label: Text('Specialist')),
-                      DataColumn(label: Text('Date')),
-                      DataColumn(label: Text('Time')),
-                      DataColumn(label: Text('Status')),
-                    ],
-                    rows: skinBookings.map((apt) {
-                      final userText = (apt.userName != null &&
-                              apt.userName!.trim().isNotEmpty)
-                          ? apt.userName!
-                          : apt.userId;
-
-                      return DataRow(cells: [
-                        DataCell(Text(userText)),
-                        DataCell(Text(apt.service)),
-                        DataCell(Text(apt.specialistId)),
-                        DataCell(Text(
-                            '${apt.date.day}/${apt.date.month}/${apt.date.year}')),
-                        DataCell(Text(apt.time)),
-                        DataCell(Text(apt.status)),
-                      ]);
-                    }).toList(),
-                  ),
-                ),
-              );
-            },
             loading: () => ShimmerCardLoader(),
             error: (error, stack) =>
                 ErrorStateWidget(message: error.toString(), onRetry: () {}),
